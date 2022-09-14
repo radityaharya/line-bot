@@ -1,0 +1,3 @@
+[submodule "binusmaya_py"]
+	path = binusmaya_py
+	url = https://github.com/radityaharya/binusmaya_py
