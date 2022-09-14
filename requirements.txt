@@ -1,0 +1,8 @@
+Flask
+Pillow
+praw
+python-dotenv
+requests
+rich
+selenium
+line_bot_sdk
