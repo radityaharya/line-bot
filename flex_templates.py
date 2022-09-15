@@ -228,90 +228,104 @@ def scheduleTemplate(
 
 
 def trakt_template(
-    title: str, season: int, episode: int, alt_text: str, img_url:str = None
+    title: str, season: int, episode: int, alt_text: str, img_url: str = None
 ):
-    contents={
-            "type": "bubble",
-            "size": "kilo",
-            "hero": {
-                "type": "image",
-                "url": img_url,
-                "size": "full",
-                "aspectRatio": "20:13",
-                "aspectMode": "cover",
-            },
-            "body": {
-                "type": "box",
-                "layout": "vertical",
-                "contents": [
-                    {"type": "text", "text": "New Episode", "size": "sm"},
-                    {
-                        "type": "text",
-                        "text": title,
-                        "weight": "bold",
-                        "size": "xl",
-                        "wrap": True,
-                    },
-                    {
-                        "type": "box",
-                        "layout": "horizontal",
-                        "margin": "md",
-                        "spacing": "none",
-                        "contents": [
-                            {
-                                "type": "box",
-                                "layout": "baseline",
-                                "spacing": "sm",
-                                "contents": [
-                                    {
-                                        "type": "text",
-                                        "text": "Season",
-                                        "color": "#aaaaaa",
-                                        "size": "sm",
-                                        "flex": 1,
-                                        "weight": "bold",
-                                    },
-                                    {
-                                        "type": "text",
-                                        "text": str(season),
-                                        "wrap": True,
-                                        "color": "#666666",
-                                        "size": "sm",
-                                        "flex": 1,
-                                    },
-                                ],
-                            },
-                            {
-                                "type": "box",
-                                "layout": "baseline",
-                                "spacing": "sm",
-                                "contents": [
-                                    {
-                                        "type": "text",
-                                        "text": "Episode",
-                                        "color": "#aaaaaa",
-                                        "size": "sm",
-                                        "flex": 1,
-                                        "weight": "bold",
-                                    },
-                                    {
-                                        "type": "text",
-                                        "text": str(episode),
-                                        "wrap": True,
-                                        "color": "#666666",
-                                        "size": "sm",
-                                        "flex": 1,
-                                    },
-                                ],
-                            },
-                        ],
-                    },
-                ],
-            },
-        }
-    flex_message = FlexSendMessage(
-        alt_text=alt_text,
-        contents=contents,
-    )
-    
+    season_episode = f"S{season:02d}E{episode:02d}"
+    contents = {
+        "type": "bubble",
+        "size": "micro",
+        "header": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {
+                    "type": "box",
+                    "layout": "horizontal",
+                    "contents": [
+                        {
+                            "type": "image",
+                            "url": img_url,
+                            "size": "full",
+                            "aspectRatio": "1:1.1",
+                            "gravity": "center",
+                            "flex": 1,
+                            "aspectMode": "cover",
+                        },
+                        {
+                            "type": "box",
+                            "layout": "horizontal",
+                            "contents": [
+                                {
+                                    "type": "text",
+                                    "text": "NEW EPISODE",
+                                    "size": "10px",
+                                    "color": "#ffffff",
+                                    "align": "center",
+                                    "gravity": "center",
+                                }
+                            ],
+                            "backgroundColor": "#EC3D44",
+                            "paddingAll": "2px",
+                            "paddingStart": "4px",
+                            "paddingEnd": "4px",
+                            "flex": 0,
+                            "position": "absolute",
+                            "offsetStart": "10px",
+                            "offsetTop": "10px",
+                            "cornerRadius": "100px",
+                            "width": "80px",
+                            "height": "20px",
+                        },
+                    ],
+                }
+            ],
+            "paddingAll": "0px",
+        },
+        "body": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {
+                    "type": "box",
+                    "layout": "vertical",
+                    "contents": [
+                        {
+                            "type": "box",
+                            "layout": "vertical",
+                            "contents": [
+                                {
+                                    "type": "text",
+                                    "contents": [],
+                                    "size": "md",
+                                    "wrap": True,
+                                    "text": title,
+                                    "color": "#FFFFFF",
+                                    "weight": "bold",
+                                },
+                                {
+                                    "type": "text",
+                                    "contents": [],
+                                    "size": "xs",
+                                    "wrap": True,
+                                    "text": season_episode,
+                                    "color": "#FFFFFF",
+                                    "weight": "regular",
+                                },
+                            ],
+                            "spacing": "sm",
+                        }
+                    ],
+                }
+            ],
+            "paddingAll": "20px",
+            "backgroundColor": "#282828",
+            "borderColor": "#282828",
+        },
+        "styles": {
+            "header": {"separatorColor": "#282828"},
+            "hero": {"separatorColor": "#282828"},
+            "body": {"separatorColor": "#282828", "backgroundColor": "#282828"},
+            "footer": {"separatorColor": "#282828", "backgroundColor": "#282828"},
+        },
+    }
     return contents

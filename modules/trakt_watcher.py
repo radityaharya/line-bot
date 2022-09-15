@@ -29,12 +29,14 @@ def watcher(OFFSET_DAYS=0):
     for doc in last_run.find():
         if doc["name"] == "trakt":
             trakt_last_run = doc["last_run"]
-    # if there is no last run, set it to 0
+
     if trakt_last_run is None:
         last_run.insert_one({"name": "trakt", "last_run": datetime.datetime.now()})
-            
-    # check if the last run datetime is more than 1 hour ago
-    if trakt_last_run is not None and datetime.datetime.now() - trakt_last_run < datetime.timedelta(hours=1):
+
+    if (
+        trakt_last_run is not None
+        and datetime.datetime.now() - trakt_last_run < datetime.timedelta(hours=1)
+    ):
         logger.info("Last run was less than 1 hour ago, skipping")
         return
 
@@ -62,41 +64,40 @@ def watcher(OFFSET_DAYS=0):
             if episode.airs_at.date() == datetime.date.today() + datetime.timedelta(
                 days=OFFSET_DAYS
             ):
-                # check if the episode has been posted
-                if posted.find_one(data) is not None:
-                    logger.info(f"{episode.show} episode {episode.episode} has been posted")
-                    continue
-
-                contents = trakt_template(
-                    title=data["title"],
-                    episode=data["episode"],
-                    season=data["season"],
-                    alt_text="New episode of " + data["title"] + " airs today!",
-                    img_url=data["tmdb_episode_image"],
-                )
-
-                endpoint = os.environ.get("LINE_HOST") + "/flex"
-                json_data = {
-                    "alt_text": "New episode of " + data["title"] + " airs today!",
-                    "contents": contents,
-                    "to": "@me",
-                }
-                logger.info(
-                    "Sending message to {endpoint} with data {data}".format(
-                        endpoint=endpoint, data=json_data
+                if posted.find_one({"title": data["title"], "season": data["season"], "episode": data["episode"]}) is None:
+                    logger.info(
+                        f"{episode.show} episode {episode.episode} has not been posted"
                     )
-                )
-                res = requests.post(
-                    endpoint,
-                    json=json_data,
-                    headers={
-                        "Content-Type": "application/json",
-                        "SECRET_KEY": "peepeepoopoo",
-                    },
-                )
-                logger.info(res.text)
-                posted.insert_one(data)
+                    contents = trakt_template(
+                        title=data["title"],
+                        episode=data["episode"],
+                        season=data["season"],
+                        alt_text="New episode of " + data["title"] + " airs today!",
+                        img_url=data["tmdb_episode_image"],
+                    )
+
+                    endpoint = os.environ.get("LINE_HOST") + "/flex"
+                    json_data = {
+                        "alt_text": "New episode of " + data["title"] + " airs today!",
+                        "contents": contents,
+                        "to": "@me",
+                    }
+                    logger.info(
+                        "Sending message to {endpoint} with data {data}".format(
+                            endpoint=endpoint, data=json_data
+                        )
+                    )
+                    r = requests.post(
+                        endpoint,
+                        json=json_data,
+                        headers={
+                            "Content-Type": "application/json",
+                            "SECRET_KEY": os.environ.get("SECRET_KEY"),
+                        },
+                    )
+                    r.close()
+                    posted.insert_one(data)
         last_run.update_one(
             {"name": "trakt"}, {"$set": {"last_run": datetime.datetime.now()}}
         )
-        time.sleep(60)
+        time.sleep(10)
