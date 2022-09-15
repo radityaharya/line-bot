@@ -6,3 +6,6 @@ __pycache__/
 .env
 line.log
 config.json
+trakt_config.json
+posted_trakt.log
+trakt_last_run.txt

@@ -7,6 +7,7 @@ My personal LINE Messenger bot
 
 - Fetch next schedule from Binusmaya
 - Get random image from specified subreddit
+- Trakt new episode notification
 
 
 ## Environment Variables
@@ -24,6 +25,10 @@ To run this project with all of its features, you will need to add the following
 `REDDIT_CLIENT_ID`
 
 `REDDIT_CLIENT_SECRET`
+
+`TMDB_API_KEY`
+
+`SECRET_KEY` (for receiving External Flex requests)
 
 ## Run Locally
 
@@ -48,7 +53,7 @@ Install dependencies
 Start the server
 
 ```bash
-  gunicorn --bind '0.0.0.0:8011' app:app
+  gunicorn --bind '0.0.0.0:8011' app:run
 ```
 
 

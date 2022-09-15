@@ -1,7 +1,9 @@
+import datetime
 import json
 import logging
-from multiprocessing import Process
+import threading
 import os
+import time
 
 import dotenv
 from rich.logging import RichHandler
@@ -34,6 +36,7 @@ from modules.ping import ping
 from modules.binus import get_next_schedule
 from modules.reddit import get_random_image_from_subreddit
 from modules.line import echo
+import modules.trakt_watcher as trakt_watcher
 
 dotenv.load_dotenv(override=True)
 
@@ -59,7 +62,7 @@ filehandler = logging.FileHandler("line.log")
 filehandler.setFormatter(logging.Formatter("[%(asctime)s][%(levelname)s] %(message)s"))
 LOGGER.addHandler(filehandler)
 
-logging.getLogger("werkzeug").setLevel(logging.ERROR)
+logging.getLogger("werkzeug").setLevel(logging.INFO)
 
 app = Flask(__name__)
 
@@ -157,6 +160,28 @@ def callback():
 
     return "OK"
 
+@app.route("/flex", methods=["POST"])
+def receive_flex():
+    key = request.headers["SECRET_KEY"]
+    if key != os.environ.get("SECRET_KEY"):
+        return "Invalid key", 403
+    else:
+        try:
+            data = request.json
+            if data["to"] == "@me":
+                data["to"] = config["owner_id"]
+            line_bot_api.push_message(
+                data["to"], FlexSendMessage(contents=data["contents"], alt_text=data["alt_text"])
+            )
+            return "OK", 200
+        except Exception as e:
+            return str(e), 500
+
 @app.route("/health")
 def health():
     return "OK"
+
+def run(*kwargs):
+    trakt_process = threading.Thread(target=trakt_watcher.watcher)
+    trakt_process.start()
+    return app(*kwargs)

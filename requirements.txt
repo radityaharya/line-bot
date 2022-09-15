@@ -6,3 +6,4 @@ requests
 rich
 selenium
 line_bot_sdk
+trakt

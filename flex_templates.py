@@ -1,4 +1,5 @@
 import json
+from lzma import FILTER_X86
 from linebot.models import (
     FlexSendMessage,
 )
@@ -224,3 +225,93 @@ def scheduleTemplate(
         },
     )
     return flex_message
+
+
+def trakt_template(
+    title: str, season: int, episode: int, alt_text: str, img_url:str = None
+):
+    contents={
+            "type": "bubble",
+            "size": "kilo",
+            "hero": {
+                "type": "image",
+                "url": img_url,
+                "size": "full",
+                "aspectRatio": "20:13",
+                "aspectMode": "cover",
+            },
+            "body": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                    {"type": "text", "text": "New Episode", "size": "sm"},
+                    {
+                        "type": "text",
+                        "text": title,
+                        "weight": "bold",
+                        "size": "xl",
+                        "wrap": True,
+                    },
+                    {
+                        "type": "box",
+                        "layout": "horizontal",
+                        "margin": "md",
+                        "spacing": "none",
+                        "contents": [
+                            {
+                                "type": "box",
+                                "layout": "baseline",
+                                "spacing": "sm",
+                                "contents": [
+                                    {
+                                        "type": "text",
+                                        "text": "Season",
+                                        "color": "#aaaaaa",
+                                        "size": "sm",
+                                        "flex": 1,
+                                        "weight": "bold",
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": str(season),
+                                        "wrap": True,
+                                        "color": "#666666",
+                                        "size": "sm",
+                                        "flex": 1,
+                                    },
+                                ],
+                            },
+                            {
+                                "type": "box",
+                                "layout": "baseline",
+                                "spacing": "sm",
+                                "contents": [
+                                    {
+                                        "type": "text",
+                                        "text": "Episode",
+                                        "color": "#aaaaaa",
+                                        "size": "sm",
+                                        "flex": 1,
+                                        "weight": "bold",
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": str(episode),
+                                        "wrap": True,
+                                        "color": "#666666",
+                                        "size": "sm",
+                                        "flex": 1,
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                ],
+            },
+        }
+    flex_message = FlexSendMessage(
+        alt_text=alt_text,
+        contents=contents,
+    )
+    
+    return contents

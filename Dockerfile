@@ -9,4 +9,4 @@ RUN apt update
 RUN apt install tzdata -y
 RUN pip install gunicorn
 EXPOSE 8011
-CMD ["gunicorn", "-b", "0.0.0.0:8011", "app:app"]
+CMD ["gunicorn", "-b", "0.0.0.0:8011", "app:run"]
