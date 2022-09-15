@@ -9,6 +9,13 @@ from flex_templates import trakt_template
 from trakt.calendar import MyShowCalendar
 from trakt.users import User
 from util import tmdb_util
+import pymongo
+
+client = pymongo.MongoClient(os.environ.get("MONGO_URI"))
+
+db = client["line-bot"]
+posted = db["trakt-posted"]
+last_run = db["last-run"]
 
 load_dotenv(override=True)
 
@@ -18,21 +25,19 @@ logger = logging.getLogger("line-bot")
 def watcher(OFFSET_DAYS=0):
     logger.info("Starting Trakt Watcher")
     trakt_last_run = None
-    try:
-        with open("trakt_last_run.txt", "r") as f:
-            trakt_last_run = f.readlines()[-1]
-    except:
-        with open("trakt_last_run.txt", "w") as f:
-            f.write(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-    if trakt_last_run is not None:
-        datetime_last_run = datetime.datetime.strptime(
-            trakt_last_run, "%Y-%m-%d %H:%M:%S"
-        )
-        if datetime_last_run > datetime.datetime.now() - datetime.timedelta(minutes=50):
-            logger.info("Watcher already running")
-            return
-    with open("trakt_last_run.txt", "w") as f:
-        f.write(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    # get the last run from db
+    for doc in last_run.find():
+        if doc["name"] == "trakt":
+            trakt_last_run = doc["last_run"]
+    # if there is no last run, set it to 0
+    if trakt_last_run is None:
+        last_run.insert_one({"name": "trakt", "last_run": datetime.datetime.now()})
+            
+    # check if the last run datetime is more than 1 hour ago
+    if trakt_last_run is not None and datetime.datetime.now() - trakt_last_run < datetime.timedelta(hours=1):
+        logger.info("Last run was less than 1 hour ago, skipping")
+        return
+
     trakt.core.CONFIG_PATH = "./trakt_config.json"
     me = User("otied")
     while True:
@@ -57,12 +62,9 @@ def watcher(OFFSET_DAYS=0):
             if episode.airs_at.date() == datetime.date.today() + datetime.timedelta(
                 days=OFFSET_DAYS
             ):
-                with open("posted_trakt.log", "r") as f:
-                    posted_trakt = f.read()
-
-                log_str = f"{data['title']} S{data['season']}E{data['episode']}"
-                if log_str in posted_trakt:
-                    logger.info(f"Already posted {log_str}")
+                # check if the episode has been posted
+                if posted.find_one(data) is not None:
+                    logger.info(f"{episode.show} episode {episode.episode} has been posted")
                     continue
 
                 contents = trakt_template(
@@ -93,9 +95,8 @@ def watcher(OFFSET_DAYS=0):
                     },
                 )
                 logger.info(res.text)
-                with open("posted_trakt.log", "a") as f:
-                    # write to log with newline
-                    f.write(log_str + "\n")
-                # time.sleep(60)
-
+                posted.insert_one(data)
+        last_run.update_one(
+            {"name": "trakt"}, {"$set": {"last_run": datetime.datetime.now()}}
+        )
         time.sleep(60)

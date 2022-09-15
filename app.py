@@ -6,6 +6,7 @@ import os
 import time
 
 import dotenv
+import pymongo
 from rich.logging import RichHandler
 from flask import Flask, abort, request
 from linebot import LineBotApi, WebhookHandler
@@ -37,6 +38,7 @@ from modules.binus import get_next_schedule
 from modules.reddit import get_random_image_from_subreddit
 from modules.line import echo
 import modules.trakt_watcher as trakt_watcher
+from util.mongo_log_handler import MongoLogHandler
 
 dotenv.load_dotenv(override=True)
 
@@ -60,8 +62,9 @@ logging.basicConfig(
 
 filehandler = logging.FileHandler("line.log")
 filehandler.setFormatter(logging.Formatter("[%(asctime)s][%(levelname)s] %(message)s"))
+line_log = pymongo.MongoClient(os.environ.get("MONGO_URI"))["line-bot"]["line-log"]
 LOGGER.addHandler(filehandler)
-
+LOGGER.addHandler(MongoLogHandler(line_log))
 logging.getLogger("werkzeug").setLevel(logging.INFO)
 
 app = Flask(__name__)

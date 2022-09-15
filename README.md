@@ -30,6 +30,8 @@ To run this project with all of its features, you will need to add the following
 
 `SECRET_KEY` (for receiving External Flex requests)
 
+`MONGO_URI`
+
 ## Run Locally
 
 Clone the project
