@@ -1,3 +1,4 @@
+from asyncio.log import logger
 import datetime
 import json
 import logging
@@ -21,6 +22,9 @@ from linebot.models import (
     MessageAction,
     MessageEvent,
     PostbackEvent,
+    VideoSendMessage,
+    AudioSendMessage,
+    LocationSendMessage,
     QuickReply,
     QuickReplyButton,
     SourceGroup,
@@ -37,7 +41,6 @@ from modules.ping import ping
 from modules.binus import get_next_schedule
 from modules.reddit import get_random_image_from_subreddit
 from modules.line import echo
-import modules.trakt_watcher as trakt_watcher
 from util.mongo_log_handler import MongoLogHandler
 
 dotenv.load_dotenv(override=True)
@@ -72,11 +75,9 @@ app = Flask(__name__)
 line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
-line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
-handler = WebhookHandler(LINE_CHANNEL_SECRET)
-
 with open("config.json") as f:
     config = json.load(f)
+
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_text_message(event):
@@ -142,7 +143,6 @@ def handle_text_message(event):
         line_bot_api.reply_message(event.reply_token, response)
 
 
-
 @app.route("/callback", methods=["POST"])
 def callback():
     """
@@ -163,28 +163,90 @@ def callback():
 
     return "OK"
 
-@app.route("/flex", methods=["POST"])
+
+@app.route("/push", methods=["POST"])
 def receive_flex():
     key = request.headers["SECRET_KEY"]
     if key != os.environ.get("SECRET_KEY"):
         return "Invalid key", 403
+    if request.headers["Content-Type"] != "application/json":
+        return "Invalid content type", 400
     else:
         try:
             data = request.json
             if data["to"] == "@me":
                 data["to"] = config["owner_id"]
-            line_bot_api.push_message(
-                data["to"], FlexSendMessage(contents=data["contents"], alt_text=data["alt_text"])
-            )
+            message_types = [
+                "text",
+                "image",
+                "video",
+                "audio",
+                "location",
+                "file",
+                "flex",
+            ]
+
+            if data["type"] not in message_types:
+                return (
+                    "Invalid message type, must be one of " + ", ".join(message_types),
+                    400,
+                )
+            elif data["type"] == "text":
+                line_bot_api.push_message(
+                    data["to"], TextSendMessage(text=data["content"]["text"])
+                )
+            elif data["type"] == "flex":
+                line_bot_api.push_message(
+                    data["to"],
+                    FlexSendMessage(
+                        alt_text=data["content"]["alt_text"],
+                        contents=data["content"]["contents"],
+                    ),
+                )
+            elif data["type"] == "image":
+                line_bot_api.push_message(
+                    data["to"],
+                    ImageSendMessage(
+                        original_content_url=data["content"]["original_content_url"],
+                        preview_image_url=data["content"]["preview_image_url"],
+                    ),
+                )
+            elif data["type"] == "video":
+                line_bot_api.push_message(
+                    data["to"],
+                    VideoSendMessage(
+                        original_content_url=data["content"]["original_content_url"],
+                        preview_image_url=data["content"]["preview_image_url"],
+                    ),
+                )
+            elif data["type"] == "audio":
+                line_bot_api.push_message(
+                    data["to"],
+                    AudioSendMessage(
+                        original_content_url=data["content"]["original_content_url"],
+                        duration=data["content"]["duration"],
+                    ),
+                )
+            elif data["type"] == "location":
+                line_bot_api.push_message(
+                    data["to"],
+                    LocationSendMessage(
+                        title=data["content"]["title"],
+                        address=data["content"]["address"],
+                        latitude=data["content"]["latitude"],
+                        longitude=data["content"]["longitude"],
+                    ),
+                )
             return "OK", 200
         except Exception as e:
-            return str(e), 500
+            logger.exception(e)
+            return "Error: " + str(e), 500
+
 
 @app.route("/health")
 def health():
     return "OK"
 
+
 def run(*kwargs):
-    trakt_process = threading.Thread(target=trakt_watcher.watcher)
-    trakt_process.start()
     return app(*kwargs)
