@@ -3,10 +3,10 @@ from datetime import datetime
 from binusmaya_py.bimay import bimay as bimay
 import json
 from flex_templates import scheduleTemplate
+from decorators.rule import is_owner
 
 
-
-
+@is_owner
 def get_next_schedule(event, **kwargs):
     bm = bimay(token=os.environ.get("BIMAY_TOKEN"))
     # TODO: Location not working

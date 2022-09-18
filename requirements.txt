@@ -7,3 +7,4 @@ rich
 selenium
 line_bot_sdk
 pymongo[srv]
+fuzzywuzzy

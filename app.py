@@ -2,6 +2,8 @@ from asyncio.log import logger
 import datetime
 import json
 import logging
+from re import M
+from sys import prefix
 import threading
 import os
 import time
@@ -41,6 +43,7 @@ from modules.ping import ping
 from modules.binus import get_next_schedule
 from modules.reddit import get_random_image_from_subreddit
 from modules.line import echo
+from modules.imgflip import make_meme
 from util.mongo_log_handler import MongoLogHandler
 
 dotenv.load_dotenv(override=True)
@@ -75,8 +78,14 @@ app = Flask(__name__)
 line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
-with open("config.json") as f:
-    config = json.load(f)
+
+try:
+    with open("config.json") as f:
+        config = json.load(f)
+except FileNotFoundError:
+    config = {"prefix": "!", "owner_id": "", "blocked_ids": []}
+    with open("config.json", "w") as f:
+        json.dump(config, f, indent=4)
 
 
 @handler.add(MessageEvent, message=TextMessage)
@@ -86,31 +95,35 @@ def handle_text_message(event):
     LOGGER.info(f"[MESSAGE] {user_name} ({user_id}): {event.message.text}")
     line_util.check_owner_config(event)
 
+    prefix = ""
     if not isinstance(event.source, SourceUser):
-        if not event.message.text.startswith("!"):
+        if not event.message.text.startswith(config["prefix"]):
             LOGGER.info("Prefix not found")
             return
         event.message.text = event.message.text.replace(config["prefix"], "", 1)
-
+        prefix = config["prefix"]
+            
     event.message.text = line_util.sanitize_text(event.message.text)
     triggers = {
-        "bye": line_util.leave,
-        "ping": ping,
-        "schedule": get_next_schedule,
-        "reddit": get_random_image_from_subreddit,
-        "echo": echo,
+        "bye": [line_util.leave, "Leave the group"],
+        "ping": [ping, "Ping the bot"],
+        "schedule": [get_next_schedule, "Get next schedule from binusmaya"],
+        "reddit": [get_random_image_from_subreddit, "Get random image from subreddit"],
+        "echo": [echo, "Echo the message"],
+        "meme": [make_meme, f"Make a meme, usage: {prefix}meme <template:id or query>/<top text>/<bottom text>"],
     }
     if event.message.text == "help":
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(
-                text="Available commands:\n- " + "\n- ".join(triggers.keys())
-            ),
+        
+        message = "Available commands:\n"
+        for trigger, (func, desc) in triggers.items():
+            message += f"{prefix}{trigger}: {desc}\n"
+        return line_bot_api.reply_message(
+            event.reply_token, TextSendMessage(text=message)
         )
 
     for trigger in triggers:
         if event.message.text.startswith(trigger):
-            response = triggers[trigger](
+            response = triggers[trigger][0](
                 event, line_bot_api=line_bot_api, line_host=HOST
             )
             break
