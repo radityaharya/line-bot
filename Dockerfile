@@ -8,6 +8,5 @@ RUN pip install -r requirements.txt
 RUN apt update 
 RUN apt install tzdata -y
 RUN pip install gunicorn
-EXPOSE 8011
-RUN git submodule update --init --recursive
-CMD ["gunicorn", "-b", "0.0.0.0:8011", "app:run"]
+EXPOSE 80
+CMD ["gunicorn", "-b", "0.0.0.0:80", "app:run"]

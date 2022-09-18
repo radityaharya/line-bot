@@ -3,6 +3,6 @@ services:
     line-bot:
         build: .
         ports:
-            - "8011:8011"
+            - "80:80"
         volumes:
             - .:/line-bot
