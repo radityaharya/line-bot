@@ -1,4 +1,3 @@
-
 import json
 from linebot.models import (
     SourceUser,
@@ -6,10 +5,12 @@ from linebot.models import (
     SourceRoom,
 )
 from linebot.exceptions import LineBotApiError
-from linebot.models import (TextSendMessage)
+from linebot.models import TextSendMessage
 import re
 import logging
+
 logger = logging.getLogger("line-bot")
+
 
 def get_user_profile(line_bot_api, uid: str) -> tuple:
     """
@@ -26,6 +27,7 @@ def get_user_profile(line_bot_api, uid: str) -> tuple:
         for m in e.error.details:
             logger.error("  %s: %s" % (m.property, m.message))
     return user_name, user_picture_url
+
 
 def leave(event, **kwargs):
     line_bot_api = kwargs["line_bot_api"]
@@ -45,17 +47,40 @@ def leave(event, **kwargs):
         )
     return "Leaving group"
 
+
+def load_config() -> dict:
+    """
+    Load config.json
+    """
+    try:
+        with open("config.json", "r") as f:
+            config = json.load(f)
+    except FileNotFoundError:
+        config = {"prefix": "!", "owner_id": "", "blocked_ids": []}
+        logger.info(
+            "config.json not found, creating new one, invoke first chat to set owner_id"
+        )
+        json.dump(config, open("config.json", "w"))
+        with open("config.json", "r") as f:
+            config = json.load(f)
+    logger.debug(f"config: {config}")
+    return config
+
+
 def check_owner_config(event):
     """
     used in first time to set owner id
     """
     user_id = event.source.user_id
-    with open("config.json") as f:
-        config = json.load(f)
+    config = load_config()
+
     if config["owner_id"] == "":
         with open("config.json", "w") as f:
             config["owner_id"] = user_id
             json.dump(config, f, indent=4)
+            f.close()
+            logger.info("Owner ID set to " + user_id)
+
 
 def clean_url_params(url: str) -> str:
     """
@@ -63,12 +88,31 @@ def clean_url_params(url: str) -> str:
     """
     return re.sub(r"\?.*", "", url)
 
+
 def sanitize_text(text: str) -> str:
-    blacklist = ["<", ">", "&", "'", '"', "`", "$", "{", "}", "(", ")", ";", "&&", "||", "|", ">", "<", "!"]
+    blacklist = [
+        "<",
+        ">",
+        "&",
+        "'",
+        '"',
+        "`",
+        "$",
+        "{",
+        "}",
+        "(",
+        ")",
+        ";",
+        "&&",
+        "||",
+        "|",
+        ">",
+        "<",
+        "!",
+    ]
 
     text = clean_url_params(text)
 
     for char in blacklist:
         text = text.replace(char, "")
     return text
-

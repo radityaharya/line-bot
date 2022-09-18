@@ -8,20 +8,21 @@ class MongoLogHandler(logging.StreamHandler):
         self.collection = collection
     
     def emit(self, record):
-        if record.msg.startswith("[MESSAGE]"):
-            msg = record.msg.split(" ")
-            user_name = msg[1]
-            user_id = msg[2].replace("(", "").replace("):", "")
-            message = " ".join(msg[3:])
-            self.collection.insert_one(
-                {
-                    "type": "message",
-                    "user_name": user_name,
-                    "user_id": user_id,
-                    "message": message,
-                    "timestamp": record.created,
-                }
-            )
+        if isinstance(record.msg, str):
+            if record.msg.startswith("[MESSAGE]"):
+                msg = record.msg.split(" ")
+                user_name = msg[1]
+                user_id = msg[2].replace("(", "").replace("):", "")
+                message = " ".join(msg[3:])
+                self.collection.insert_one(
+                    {
+                        "type": "message",
+                        "user_name": user_name,
+                        "user_id": user_id,
+                        "message": message,
+                        "timestamp": record.created,
+                    }
+                )
         self.collection.insert_one({
             "type": "log",
             "name": record.name,

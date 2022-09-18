@@ -1,13 +1,14 @@
+from distutils.command.config import config
 import json
 from linebot.models import TextSendMessage
 import logging
+from util.line_util import load_config
 logger = logging.getLogger("line-bot")
 
 
 def is_owner(func):
-    with open("config.json", "r") as f:
-        config = json.load(f)
     def is_owner_wrapper(*args, **kwargs):
+        config = load_config()
         event = args[0]
         user_id = event.source.user_id
         if user_id == config["owner_id"]:
@@ -16,12 +17,14 @@ def is_owner(func):
         else:
             logger.info("Not owner command")
             return TextSendMessage(text="You are not the owner")
+
     return is_owner_wrapper
 
+
 def is_not_blocked(func):
-    with open("config.json", "r") as f:
-        config = json.load(f)
+
     def is_not_blocked_wrapper(*args, **kwargs):
+        config = load_config()
         event = args[0]
         user_id = event.source.user_id
         if user_id not in config["blocked_ids"]:
@@ -30,4 +33,5 @@ def is_not_blocked(func):
         else:
             logger.info("Blocked command")
             return None
+
     return is_not_blocked_wrapper

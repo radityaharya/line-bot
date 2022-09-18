@@ -1,12 +1,5 @@
-from asyncio.log import logger
-import datetime
-import json
 import logging
-from re import M
-from sys import prefix
-import threading
 import os
-import time
 
 import dotenv
 import pymongo
@@ -79,13 +72,7 @@ line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
 
-try:
-    with open("config.json") as f:
-        config = json.load(f)
-except FileNotFoundError:
-    config = {"prefix": "!", "owner_id": "", "blocked_ids": []}
-    with open("config.json", "w") as f:
-        json.dump(config, f, indent=4)
+config = line_util.load_config()
 
 
 @handler.add(MessageEvent, message=TextMessage)
@@ -252,7 +239,7 @@ def receive_flex():
                 )
             return "OK", 200
         except Exception as e:
-            logger.exception(e)
+            LOGGER.exception(e)
             return "Error: " + str(e), 500
 
 
