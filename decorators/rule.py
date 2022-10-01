@@ -10,6 +10,8 @@ def is_owner(func):
     def is_owner_wrapper(*args, **kwargs):
         config = load_config()
         event = args[0]
+        if event == None:
+            return func(*args, **kwargs)
         user_id = event.source.user_id
         if user_id == config["owner_id"]:
             logger.info("Owner command")

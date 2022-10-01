@@ -62,7 +62,7 @@ def get_forum_latest_post(event, **kwargs):
     bm = bimay(token=os.environ.get("BIMAY_TOKEN"))
     line_bot = kwargs["line_bot_api"]
     forums = bm.get_forum_latest()
-    forums = [x for x in forums["latestPost"] if x["isRead"]]
+    forums = [x for x in forums["latestPost"] if not x["isRead"]]
     for forum in forums:
         content = bm.get_forum_thread_content(
             threadId=forum["threadId"], classId=forum["classId"]
