@@ -1,8 +1,9 @@
 import json
+import re
+from datetime import datetime
 from lzma import FILTER_X86
-from linebot.models import (
-    FlexSendMessage,
-)
+
+from linebot.models import FlexSendMessage
 
 
 def scheduleTemplate(
@@ -329,3 +330,151 @@ def trakt_template(
         },
     }
     return contents
+
+
+def forum_template(
+    title: str,
+    course: str,
+    post_content: str,
+    author_name: str,
+    author_picture_url: str,
+    post_datetime: datetime,
+    post_url: str,
+) -> FlexSendMessage:
+
+    with open("schedule_config.json", "r") as f:
+        colors = json.load(f)
+
+    color = colors[course]
+
+    post_datetime = post_datetime.strftime("%A, %d %B %Y %I:%M %p")
+
+    contents = {
+        "type": "bubble",
+        "size": "mega",
+        "header": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": course,
+                    "color": "#ffffff",
+                    "align": "start",
+                    "size": "xs",
+                    "gravity": "center",
+                    "margin": "lg",
+                    "wrap": True,
+                    "offsetTop": "0px",
+                    "offsetBottom": "0px",
+                },
+                {
+                    "type": "text",
+                    "text": title,
+                    "color": "#ffffff",
+                    "align": "start",
+                    "size": "md",
+                    "gravity": "center",
+                    "wrap": True,
+                    "weight": "bold",
+                },
+                {
+                    "type": "text",
+                    "text": post_datetime,
+                    "color": "#f0f0f0",
+                    "align": "start",
+                    "size": "xs",
+                    "gravity": "center",
+                    "margin": "sm",
+                    "wrap": True,
+                    "offsetTop": "0px",
+                },
+            ],
+            "backgroundColor": color,
+            "paddingTop": "19px",
+            "paddingAll": "12px",
+            "paddingBottom": "16px",
+        },
+        "body": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {
+                    "type": "box",
+                    "layout": "horizontal",
+                    "contents": [
+                        {
+                            "type": "box",
+                            "layout": "vertical",
+                            "contents": [
+                                {
+                                    "type": "image",
+                                    "url": author_picture_url,
+                                    "size": "xxs",
+                                    "aspectMode": "cover",
+                                    "align": "start",
+                                }
+                            ],
+                            "cornerRadius": "xxl",
+                            "justifyContent": "flex-start",
+                            "alignItems": "flex-start",
+                            "margin": "0px",
+                            "spacing": "0px",
+                            "flex": 0,
+                        },
+                        {
+                            "type": "text",
+                            "text": author_name,
+                            "color": "#8C8C8C",
+                            "size": "xxs",
+                            "wrap": True,
+                        },
+                    ],
+                    "flex": 1,
+                    "alignItems": "center",
+                    "spacing": "10px",
+                    "margin": "0px",
+                    "justifyContent": "flex-start",
+                },
+                {
+                    "type": "box",
+                    "layout": "vertical",
+                    "contents": [
+                        {
+                            "type": "text",
+                            "text": post_content,
+                            "wrap": True,
+                        }
+                    ],
+                },
+            ],
+            "spacing": "md",
+            "paddingAll": "12px",
+            "action": {"type": "uri", "label": "action", "uri": post_url},
+        },
+        "footer": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [],
+            "spacing": "10px",
+        },
+        "styles": {"footer": {"separator": False}},
+    }
+
+    # find valid urls in post_content
+    urls = re.findall(r"(https?://\S+)", post_content)
+    urls = [url.split("\\n")[0] for url in urls]
+
+    for url in urls:
+        contents["footer"]["contents"].append(
+            {
+                "type": "button",
+                "action": {"type": "uri", "label": url, "uri": url},
+                "height": "sm",
+                "style": "primary",
+                "color": color,
+            }
+        )
+
+    alt_text = f"New post in {course}: {title}"
+    return FlexSendMessage(alt_text=alt_text, contents=contents)

@@ -33,10 +33,11 @@ from linebot.models import (
 import util.line_util as line_util
 
 from modules.ping import ping
-from modules.binus import get_next_schedule
+from modules.binus import get_next_schedule, get_forum_latest_post
 from modules.reddit import get_random_image_from_subreddit
 from modules.line import echo
 from modules.imgflip import make_meme
+from modules.ai import OpenAI
 from util.mongo_log_handler import MongoLogHandler
 
 dotenv.load_dotenv(override=True)
@@ -95,12 +96,17 @@ def handle_text_message(event):
         "bye": [line_util.leave, "Leave the group"],
         "ping": [ping, "Ping the bot"],
         "schedule": [get_next_schedule, "Get next schedule from binusmaya"],
+        "forum": [get_forum_latest_post, "Get latest unread posts from binusmaya forum"],
         "reddit": [get_random_image_from_subreddit, "Get random image from subreddit"],
         "echo": [echo, "Echo the message"],
         "meme": [make_meme, f"Make a meme, usage: {prefix}meme <template:id or query>/<top text>/<bottom text>"],
     }
+    # categories = [i for i in triggers.keys()]
+    # cat =  OpenAI().classify_messqge(categories, event.message.text)
+    # LOGGER.info(f"Category: {cat}")
+    # if cat in triggers:
+    #     event.message.text = cat
     if event.message.text == "help":
-        
         message = "Available commands:\n"
         for trigger, (func, desc) in triggers.items():
             message += f"{prefix}{trigger}: {desc}\n"
@@ -160,7 +166,6 @@ def callback():
         print("\n")
     except InvalidSignatureError:
         abort(400)
-
     return "OK"
 
 
@@ -247,6 +252,16 @@ def receive_flex():
 def health():
     return "OK"
 
+@app.route("/forum-ping", methods=["POST"])
+def forum_ping(event=None):
+    key = request.headers["SECRET_KEY"]
+    if key != os.environ.get("SECRET_KEY"):
+        return "Invalid key", 403
+    if request.headers["Content-Type"] != "application/json":
+        return "Invalid content type", 400
+    else:
+        posts = get_forum_latest_post(event, line_bot_api=line_bot_api, line_host=HOST)
+        return "OK", 200
 
 def run(*kwargs):
     return app(*kwargs)

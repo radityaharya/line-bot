@@ -9,3 +9,4 @@ config.json
 trakt_config.json
 posted_trakt.log
 trakt_last_run.txt
+test.py
