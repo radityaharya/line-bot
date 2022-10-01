@@ -9,4 +9,5 @@ RUN apt update
 RUN apt install tzdata -y
 RUN pip install gunicorn
 EXPOSE 80
+RUN git submodule update --init --recursive
 CMD ["gunicorn", "-b", "0.0.0.0:80", "app:run"]
