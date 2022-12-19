@@ -59,7 +59,7 @@ def get_next_schedule(event, **kwargs):
 
 @is_owner
 def get_forum_latest_post(event, **kwargs):
-    bm = bimay(token=os.environ.get("BIMAY_TOKEN"))
+    bm = Bimay(token=os.environ.get("BIMAY_TOKEN"))
     line_bot = kwargs["line_bot_api"]
     forums = bm.get_forum_latest()
     forums = [x for x in forums["latestPost"] if not x["isRead"]]
