@@ -9,3 +9,5 @@ line_bot_sdk
 pymongo[srv]
 fuzzywuzzy
 openai
+binusmayapy
+python-Levenshtein

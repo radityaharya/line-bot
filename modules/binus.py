@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 
-from binusmaya_py.bimay import bimay as bimay
+from binusmayapy import bimay
 from decorators.rule import is_owner
 from flex_templates import forum_template, scheduleTemplate
 from linebot.models import TextSendMessage
