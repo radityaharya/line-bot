@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 
-from binusmayapy import bimay
+from binusmayapy.bimay import Bimay
 from decorators.rule import is_owner
 from flex_templates import forum_template, scheduleTemplate
 from linebot.models import TextSendMessage
@@ -10,7 +10,7 @@ from util.line_util import load_config
 
 @is_owner
 def get_next_schedule(event, **kwargs):
-    bm = bimay(token=os.environ.get("BIMAY_TOKEN"))
+    bm = Bimay(token=os.environ.get("BIMAY_TOKEN"))
     now = datetime.now()
     schedules = bm.get_schedule_date(now)
     schedule = sorted(
