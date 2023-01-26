@@ -38,6 +38,7 @@ from modules.reddit import get_random_image_from_subreddit
 from modules.line import echo
 from modules.imgflip import make_meme
 from modules.ai import OpenAI
+from modules.tracemoe import match_img_tracemoe
 from util.mongo_log_handler import MongoLogHandler
 
 dotenv.load_dotenv(override=True)
@@ -148,6 +149,33 @@ def handle_text_message(event):
     ):
         line_bot_api.reply_message(event.reply_token, response)
 
+@handler.add(MessageEvent, message=ImageMessage)
+def handle_image_message(event):
+    user_id = event.source.user_id
+    user_name, user_picture_url = line_util.get_user_profile(line_bot_api, user_id)
+    LOGGER.info(f"[IMAGE] {user_name} ({user_id}): {event.message.id}")
+    line_util.check_owner_config(event)
+
+    if event.message.id:
+        message_content = line_bot_api.get_message_content(event.message.id)
+        # save image to local
+        if not os.path.exists("images"):
+            os.makedirs("images")
+        with open(f"images/{event.message.id}.jpg", "wb") as f:
+            for chunk in message_content.iter_content():
+                f.write(chunk)
+    else:
+        LOGGER.info("No image found")
+
+    image_message_handlers = [match_img_tracemoe]
+    for handler in image_message_handlers:
+        response = handler(image_path=f"images/{event.message.id}.jpg")
+        if response:
+            break
+    if not response:
+        response = TextSendMessage(text=f"No Match Found using theses handlers: {f', '.join([i.__name__ for i in image_message_handlers])}")
+    os.remove(f"images/{event.message.id}.jpg")
+    line_bot_api.reply_message(event.reply_token, response)
 
 @app.route("/callback", methods=["POST"])
 def callback():
