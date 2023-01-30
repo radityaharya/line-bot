@@ -202,8 +202,6 @@ def receive_flex():
     key = request.headers["SECRET_KEY"]
     if key != os.environ.get("SECRET_KEY"):
         return "Invalid key", 403
-    if request.headers["Content-Type"] != "application/json":
-        return "Invalid content type", 400
     else:
         try:
             data = request.json
