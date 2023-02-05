@@ -37,7 +37,7 @@ from modules.binus import get_next_schedule, get_forum_latest_post
 from modules.reddit import get_random_image_from_subreddit
 from modules.line import echo
 from modules.imgflip import make_meme
-from modules.ai import OpenAI
+# from modules.ai import OpenAI
 from modules.tracemoe import match_img_tracemoe
 from util.mongo_log_handler import MongoLogHandler
 

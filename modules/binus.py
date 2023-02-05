@@ -67,6 +67,8 @@ def get_forum_latest_post(event, **kwargs):
         content = bm.get_forum_thread_content(
             threadId=forum["threadId"], classId=forum["classId"]
         )
+        if content["threadContentText"] == None:
+            content["threadContentText"] = "no content"
         content = (
             content["threadContentText"]
             .replace("<p>", "\n")
@@ -78,6 +80,8 @@ def get_forum_latest_post(event, **kwargs):
             forum["postDate"].strip("Z").rstrip(forum["postDate"][-1]),
             "%Y-%m-%dT%H:%M:%S.%f",
         )
+        if (datetime.now() - post_datetime).days > 2:
+            continue
         post_url = f"https://newbinusmaya.binus.ac.id/lms/course/{forum['classId']}/session/{forum['classSessionId']}/forum/thread/{forum['threadId']}"
         flex_message = forum_template(
             title=forum["threadTitle"],
