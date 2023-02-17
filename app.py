@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 
 import dotenv
 import pymongo
@@ -37,7 +38,6 @@ from modules.binus import get_next_schedule, get_forum_latest_post
 from modules.reddit import get_random_image_from_subreddit
 from modules.line import echo
 from modules.imgflip import make_meme
-# from modules.ai import OpenAI
 from modules.tracemoe import match_img_tracemoe
 from util.mongo_log_handler import MongoLogHandler
 
@@ -102,11 +102,6 @@ def handle_text_message(event):
         "echo": [echo, "Echo the message"],
         "meme": [make_meme, f"Make a meme, usage: {prefix}meme <template:id or query>/<top text>/<bottom text>"],
     }
-    # categories = [i for i in triggers.keys()]
-    # cat =  OpenAI().classify_messqge(categories, event.message.text)
-    # LOGGER.info(f"Category: {cat}")
-    # if cat in triggers:
-    #     event.message.text = cat
     if event.message.text == "help":
         message = "Available commands:\n"
         for trigger, (func, desc) in triggers.items():
@@ -203,6 +198,7 @@ def receive_flex():
     if key != os.environ.get("SECRET_KEY"):
         return "Invalid key", 403
     else:
+        LOGGER.info(f"Received push request {request.headers}, {request.json}")
         try:
             data = request.json
             if data["to"] == "@me":
@@ -215,8 +211,8 @@ def receive_flex():
                 "location",
                 "file",
                 "flex",
+                "sms-otp"
             ]
-
             if data["type"] not in message_types:
                 return (
                     "Invalid message type, must be one of " + ", ".join(message_types),
@@ -268,6 +264,22 @@ def receive_flex():
                         longitude=data["content"]["longitude"],
                     ),
                 )
+            elif data["type"] == "sms-otp":
+                otp = re.search(r"\d{4,6}", data["content"]["text"])
+                # TODO: make better filter
+                if otp:
+                    otp = otp.group(0)
+                    line_bot_api.push_message(
+                        data["to"], TextSendMessage(text=data["content"]["text"])
+                    )
+                    line_bot_api.push_message(
+                        data["to"],
+                        TextSendMessage(
+                            text=otp
+                        ),
+                    )
+                else:
+                    return "Invalid OTP message", 400
             return "OK", 200
         except Exception as e:
             LOGGER.exception(e)
