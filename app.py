@@ -196,10 +196,8 @@ def callback():
     try:
         handler.handle(body, signature)
     except LineBotApiError as e:
-        print("Got exception from LINE Messaging API: %s\n" % e.message)
         for m in e.error.details:
-            print("  %s: %s" % (m.property, m.message))
-        print("\n")
+            LOGGER.error("  %s: %s" % (m.property, m.message))
     except InvalidSignatureError:
         abort(400)
     return "OK"
@@ -299,9 +297,7 @@ def receive_flex():
                 )
 
                 content = f"From: {sender}\nTo: {recipient}\nSubject: {subject}\n\n{text_content}, urls: {urls}"
-                print(content)
                 line_bot_api.push_message(data["to"], ai.parse_email(content))
-                print(content)
 
             return "OK", 200
         except Exception as e:

@@ -20,7 +20,6 @@ def get_group_members_profile(event, **kwargs) -> TextSendMessage:
             user_profile = line_bot_api.get_group_member_profile(group_id, member_id)
             members.append(user_profile)
     except LineBotApiError as e:
-        print("Got exception from LINE Messaging API: %s\n" % e.message)
         for m in e.error.details:
             logger.error("  %s: %s" % (m.property, m.message))
     members_string = ""

@@ -12,10 +12,8 @@ logger = logging.getLogger("line-bot")
 @clear_temp
 def get_random_image_from_subreddit(event, **kwargs):
     host = kwargs["line_host"]
-    print("get_random_image_from_subreddit")
     text = event.message.text[7:]
     subreddit = text.split(" ")[0]
-    print(subreddit)
     reddit = _praw.Reddit(
         client_id=os.environ.get("REDDIT_CLIENT_ID"),
         client_secret=os.environ.get("REDDIT_CLIENT_SECRET"),

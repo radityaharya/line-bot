@@ -23,7 +23,6 @@ def get_user_profile(line_bot_api, uid: str) -> tuple:
         user_name = user_profile.display_name
         user_picture_url = user_profile.picture_url
     except LineBotApiError as e:
-        print("Got exception from LINE Messaging API: %s\n" % e.message)
         for m in e.error.details:
             logger.error("  %s: %s" % (m.property, m.message))
     return user_name, user_picture_url
