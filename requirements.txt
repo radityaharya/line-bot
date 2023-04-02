@@ -10,3 +10,4 @@ pymongo[srv]
 fuzzywuzzy
 binusmayapy
 python-Levenshtein
+openai

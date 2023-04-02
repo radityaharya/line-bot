@@ -5,13 +5,14 @@ from linebot.models import TextSendMessage
 
 logger = logging.getLogger("line-bot")
 
-def get_group_members_profile(event,**kwargs) -> TextSendMessage:
+
+def get_group_members_profile(event, **kwargs) -> TextSendMessage:
     """
     Get Group Members Profile
     """
     line_bot_api = kwargs["line_bot_api"]
     group_id = event.source.group_id
-    
+
     members = []
     try:
         member_ids = line_bot_api.get_group_member_ids(group_id)
@@ -26,6 +27,7 @@ def get_group_members_profile(event,**kwargs) -> TextSendMessage:
     for member in members:
         members_string += f"{member.display_name} ({member.user_id})\n"
     return TextSendMessage(text=members_string)
+
 
 def echo(event, **kwargs) -> TextSendMessage:
     """

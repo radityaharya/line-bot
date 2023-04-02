@@ -32,13 +32,14 @@ from linebot.models import (
 )
 
 import util.line_util as line_util
-
+import util.mail_parser as mail_parser
 from modules.ping import ping
 from modules.binus import get_next_schedule, get_forum_latest_post
 from modules.reddit import get_random_image_from_subreddit
 from modules.line import echo
 from modules.imgflip import make_meme
 from modules.tracemoe import match_img_tracemoe
+from modules.ai import OpenAI
 from util.mongo_log_handler import MongoLogHandler
 
 dotenv.load_dotenv(override=True)
@@ -76,6 +77,8 @@ handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
 config = line_util.load_config()
 
+ai = OpenAI()
+
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_text_message(event):
@@ -91,16 +94,22 @@ def handle_text_message(event):
             return
         event.message.text = event.message.text.replace(config["prefix"], "", 1)
         prefix = config["prefix"]
-            
+
     event.message.text = line_util.sanitize_text(event.message.text)
     triggers = {
         "bye": [line_util.leave, "Leave the group"],
         "ping": [ping, "Ping the bot"],
         "schedule": [get_next_schedule, "Get next schedule from binusmaya"],
-        "forum": [get_forum_latest_post, "Get latest unread posts from binusmaya forum"],
+        "forum": [
+            get_forum_latest_post,
+            "Get latest unread posts from binusmaya forum",
+        ],
         "reddit": [get_random_image_from_subreddit, "Get random image from subreddit"],
         "echo": [echo, "Echo the message"],
-        "meme": [make_meme, f"Make a meme, usage: {prefix}meme <template:id or query>/<top text>/<bottom text>"],
+        "meme": [
+            make_meme,
+            f"Make a meme, usage: {prefix}meme <template:id or query>/<top text>/<bottom text>",
+        ],
     }
     if event.message.text == "help":
         message = "Available commands:\n"
@@ -118,7 +127,7 @@ def handle_text_message(event):
             break
     else:
         LOGGER.info("Command not found")
-        response = TextSendMessage(text="No command found")
+        response = ai.get_response(query=event.message.text, user_id=user_id)
 
     if isinstance(
         response,
@@ -144,6 +153,7 @@ def handle_text_message(event):
     ):
         line_bot_api.reply_message(event.reply_token, response)
 
+
 @handler.add(MessageEvent, message=ImageMessage)
 def handle_image_message(event):
     user_id = event.source.user_id
@@ -168,9 +178,12 @@ def handle_image_message(event):
         if response:
             break
     if not response:
-        response = TextSendMessage(text=f"No Match Found using theses handlers: {f', '.join([i.__name__ for i in image_message_handlers])}")
+        response = TextSendMessage(
+            text=f"No Match Found using theses handlers: {f', '.join([i.__name__ for i in image_message_handlers])}"
+        )
     os.remove(f"images/{event.message.id}.jpg")
     line_bot_api.reply_message(event.reply_token, response)
+
 
 @app.route("/callback", methods=["POST"])
 def callback():
@@ -211,7 +224,8 @@ def receive_flex():
                 "location",
                 "file",
                 "flex",
-                "sms-otp"
+                "sms-otp",
+                "mail-forward",
             ]
             if data["type"] not in message_types:
                 return (
@@ -274,12 +288,21 @@ def receive_flex():
                     )
                     line_bot_api.push_message(
                         data["to"],
-                        TextSendMessage(
-                            text=otp
-                        ),
+                        TextSendMessage(text=otp),
                     )
                 else:
                     return "Invalid OTP message", 400
+            elif data["type"] == "mail-forward":
+                content = str(data["content"]["text"])
+                sender, recipient, subject, text_content, urls = mail_parser.parse(
+                    content
+                )
+
+                content = f"From: {sender}\nTo: {recipient}\nSubject: {subject}\n\n{text_content}, urls: {urls}"
+                print(content)
+                line_bot_api.push_message(data["to"], ai.parse_email(content))
+                print(content)
+
             return "OK", 200
         except Exception as e:
             LOGGER.exception(e)
@@ -289,6 +312,7 @@ def receive_flex():
 @app.route("/health")
 def health():
     return "OK"
+
 
 @app.route("/forum-ping", methods=["POST"])
 def forum_ping(event=None):
@@ -300,6 +324,7 @@ def forum_ping(event=None):
     else:
         posts = get_forum_latest_post(event, line_bot_api=line_bot_api, line_host=HOST)
         return "OK", 200
+
 
 def run(*kwargs):
     return app(*kwargs)

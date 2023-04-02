@@ -4,6 +4,7 @@ import requests
 from fuzzywuzzy import fuzz
 from linebot.models import ImageSendMessage, TextSendMessage
 
+
 def get_memes():
     url = "https://api.imgflip.com/get_memes"
     response = requests.get(url)

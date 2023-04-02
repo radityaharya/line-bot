@@ -341,7 +341,6 @@ def forum_template(
     post_datetime: datetime,
     post_url: str,
 ) -> FlexSendMessage:
-
     with open("schedule_config.json", "r") as f:
         colors = json.load(f)
 

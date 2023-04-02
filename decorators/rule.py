@@ -3,6 +3,7 @@ import json
 from linebot.models import TextSendMessage
 import logging
 from util.line_util import load_config
+
 logger = logging.getLogger("line-bot")
 
 
@@ -24,7 +25,6 @@ def is_owner(func):
 
 
 def is_not_blocked(func):
-
     def is_not_blocked_wrapper(*args, **kwargs):
         config = load_config()
         event = args[0]

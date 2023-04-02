@@ -2,7 +2,9 @@ import os
 import multiprocessing
 import time
 import logging
+
 logger = logging.getLogger("line-bot")
+
 
 def clear_temp():
     time.sleep(10)
@@ -12,9 +14,11 @@ def clear_temp():
             os.remove(f"./static/tmp/{filename}")
             logger.info(f"Removed {filename}")
 
+
 def clear(func):
     def wrapper(*args, **kwargs):
         p = multiprocessing.Process(target=clear_temp)
         p.start()
         return func(*args, **kwargs)
+
     return wrapper
