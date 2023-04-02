@@ -29,7 +29,7 @@ class ChatLogger:
             }
         )
 
-    def retrieve_messages(self, user_id, limit=10, include_system=False):
+    def retrieve_messages(self, user_id, limit=50, include_system=False):
         # List Comprehension to filter out system messages
         messages = [
             {"role": message["role"], "content": message["message"]}
