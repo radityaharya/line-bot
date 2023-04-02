@@ -1,4 +1,5 @@
 import json
+import os
 from linebot.models import (
     SourceUser,
     SourceGroup,
@@ -72,6 +73,16 @@ def check_owner_config(event):
     """
     user_id = event.source.user_id
     config = load_config()
+    
+    # check if "OWNER_ID" is set in env
+    if "OWNER_ID" in os.environ:
+        if config["owner_id"] == "":
+            with open("config.json", "w") as f:
+                config["owner_id"] = os.environ["OWNER_ID"]
+                json.dump(config, f, indent=4)
+                f.close()
+                logger.info("Owner ID set to " + os.environ["OWNER_ID"])
+        return
 
     if config["owner_id"] == "":
         with open("config.json", "w") as f:
