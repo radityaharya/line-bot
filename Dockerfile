@@ -11,4 +11,4 @@ RUN pip install gunicorn
 EXPOSE 80
 RUN git init
 RUN git submodule update --init --recursive
-CMD ["gunicorn", "-b", "0.0.0.0:80", "app:run" "--timeout", "1000"]
+CMD ["gunicorn", "-b", "0.0.0.0:80", "app:run", "--timeout", "1000"]
