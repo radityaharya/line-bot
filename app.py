@@ -51,22 +51,22 @@ HOST = os.environ.get("LINE_HOST")
 LOGGER = logging.getLogger("line-bot")
 LOGGER.setLevel(logging.INFO)
 
-logging.basicConfig(
-    level="INFO",
-    format="%(funcName)s-> %(message)s",
-    datefmt="[%X]",
-    handlers=[
-        RichHandler(
-            rich_tracebacks=True, show_path=False, markup=True, enable_link_path=True
-        )
-    ],
-)
+# logging.basicConfig(
+#     level="INFO",
+#     format="%(funcName)s-> %(message)s",
+#     datefmt="[%X]",
+#     handlers=[
+#         RichHandler(
+#             rich_tracebacks=True, show_path=False, markup=True, enable_link_path=True
+#         )
+#     ],
+# )
 
-filehandler = logging.FileHandler("line.log")
-filehandler.setFormatter(logging.Formatter("[%(asctime)s][%(levelname)s] %(message)s"))
-line_log = pymongo.MongoClient(os.environ.get("MONGO_URI"))["line-bot"]["line-log"]
-LOGGER.addHandler(filehandler)
-LOGGER.addHandler(MongoLogHandler(line_log))
+# filehandler = logging.FileHandler("line.log")
+# filehandler.setFormatter(logging.Formatter("[%(asctime)s][%(levelname)s] %(message)s"))
+# line_log = pymongo.MongoClient(os.environ.get("MONGO_URI"))["line-bot"]["line-log"]
+# LOGGER.addHandler(filehandler)
+# LOGGER.addHandler(MongoLogHandler(line_log))
 logging.getLogger("werkzeug").setLevel(logging.INFO)
 
 app = Flask(__name__)
