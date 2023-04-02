@@ -1,3 +1,4 @@
+import datetime
 import logging
 import os
 import re
@@ -40,6 +41,8 @@ from modules.line import echo
 from modules.imgflip import make_meme
 from modules.tracemoe import match_img_tracemoe
 from modules.ai import OpenAI
+from modules.user_context import overwrite_user_context
+from modules.unblock_user import unblock
 from util.mongo_log_handler import MongoLogHandler
 
 dotenv.load_dotenv(override=True)
@@ -51,22 +54,22 @@ HOST = os.environ.get("LINE_HOST")
 LOGGER = logging.getLogger("line-bot")
 LOGGER.setLevel(logging.INFO)
 
-# logging.basicConfig(
-#     level="INFO",
-#     format="%(funcName)s-> %(message)s",
-#     datefmt="[%X]",
-#     handlers=[
-#         RichHandler(
-#             rich_tracebacks=True, show_path=False, markup=True, enable_link_path=True
-#         )
-#     ],
-# )
+logging.basicConfig(
+    level="INFO",
+    format="%(funcName)s-> %(message)s",
+    datefmt="[%X]",
+    handlers=[
+        RichHandler(
+            rich_tracebacks=True, show_path=False, markup=True, enable_link_path=True
+        )
+    ],
+)
 
-# filehandler = logging.FileHandler("line.log")
-# filehandler.setFormatter(logging.Formatter("[%(asctime)s][%(levelname)s] %(message)s"))
-# line_log = pymongo.MongoClient(os.environ.get("MONGO_URI"))["line-bot"]["line-log"]
-# LOGGER.addHandler(filehandler)
-# LOGGER.addHandler(MongoLogHandler(line_log))
+filehandler = logging.FileHandler("line.log")
+filehandler.setFormatter(logging.Formatter("[%(asctime)s][%(levelname)s] %(message)s"))
+line_log = pymongo.MongoClient(os.environ.get("MONGO_URI"))["line-bot"]["line-log"]
+LOGGER.addHandler(filehandler)
+LOGGER.addHandler(MongoLogHandler(line_log))
 logging.getLogger("werkzeug").setLevel(logging.INFO)
 
 app = Flask(__name__)
@@ -110,6 +113,11 @@ def handle_text_message(event):
             make_meme,
             f"Make a meme, usage: {prefix}meme <template:id or query>/<top text>/<bottom text>",
         ],
+        "overwritectx": [
+            overwrite_user_context,
+            f"Overwrite user context used by the AI, usage: {prefix}overwritectx <new context>",
+        ],
+        "unblock": [unblock, "Unblock the user, usage: unblock <user id>"],
     }
     if event.message.text == "help":
         message = "Available commands:\n"
@@ -127,7 +135,12 @@ def handle_text_message(event):
             break
     else:
         LOGGER.info("Command not found")
-        response = ai.get_response(query=event.message.text, user_id=user_id)
+        context = f"""
+        You are currently talking to someone with the username: {user_name}
+        The user id is: {user_id}
+        the current time is: {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+        """
+        response = ai.get_response(query=event.message.text, user_id=user_id, user_name=user_name, context=context)
 
     if isinstance(
         response,
