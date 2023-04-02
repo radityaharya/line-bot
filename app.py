@@ -49,7 +49,7 @@ LINE_CHANNEL_SECRET = os.environ.get("LINE_CHANNEL_SECRET")
 HOST = os.environ.get("LINE_HOST")
 
 LOGGER = logging.getLogger("line-bot")
-LOGGER.setLevel(logging.DEBUG)
+LOGGER.setLevel(logging.INFO)
 
 logging.basicConfig(
     level="INFO",
@@ -209,7 +209,7 @@ def receive_flex():
     if key != os.environ.get("SECRET_KEY"):
         return "Invalid key", 403
     else:
-        LOGGER.info(f"Received push request {request.headers}, {request.json}")
+        # LOGGER.info(f"Received push request {request.headers}, {request.json}")
         try:
             data = request.json
             if data["to"] == "@me":
