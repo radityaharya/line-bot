@@ -5,23 +5,21 @@ import re
 
 import dotenv
 import pymongo
-from rich.logging import RichHandler
 from flask import Flask, abort, request
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError, LineBotApiError
 from linebot.models import (
     AudioMessage,
+    AudioSendMessage,
     DatetimePickerAction,
     FileMessage,
     FlexSendMessage,
     ImageMessage,
     ImageSendMessage,
+    LocationSendMessage,
     MessageAction,
     MessageEvent,
     PostbackEvent,
-    VideoSendMessage,
-    AudioSendMessage,
-    LocationSendMessage,
     QuickReply,
     QuickReplyButton,
     SourceGroup,
@@ -30,19 +28,22 @@ from linebot.models import (
     TextMessage,
     TextSendMessage,
     VideoMessage,
+    VideoSendMessage,
 )
+from rich.logging import RichHandler
 
 import util.line_util as line_util
 import util.mail_parser as mail_parser
-from modules.ping import ping
-from modules.binus import get_next_schedule, get_forum_latest_post
-from modules.reddit import get_random_image_from_subreddit
-from modules.line import echo
-from modules.imgflip import make_meme
-from modules.tracemoe import match_img_tracemoe
 from modules.ai import OpenAI
-from modules.user_context import overwrite_user_context
+from modules.binus import get_forum_latest_post, get_next_schedule
+from modules.delete_chat_context import delete_chat_context
+from modules.imgflip import make_meme
+from modules.line import echo
+from modules.ping import ping
+from modules.reddit import get_random_image_from_subreddit
+from modules.tracemoe import match_img_tracemoe
 from modules.unblock_user import unblock
+from modules.user_context import overwrite_user_context
 from util.mongo_log_handler import MongoLogHandler
 
 dotenv.load_dotenv(override=True)
@@ -77,18 +78,18 @@ app = Flask(__name__)
 line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
-
-config = line_util.load_config()
-
 ai = OpenAI()
 
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_text_message(event):
+    config = line_util.load_config()
     user_id = event.source.user_id
     user_name, user_picture_url = line_util.get_user_profile(line_bot_api, user_id)
     LOGGER.info(f"[MESSAGE] {user_name} ({user_id}): {event.message.text}")
     line_util.check_owner_config(event)
+
+    user_config = line_util.user_config(event, line_bot_api=line_bot_api)
 
     prefix = ""
     if not isinstance(event.source, SourceUser):
@@ -118,6 +119,10 @@ def handle_text_message(event):
             f"Overwrite user context used by the AI, usage: {prefix}overwritectx <new context>",
         ],
         "unblock": [unblock, "Unblock the user, usage: unblock <user id>"],
+        "deletechatctx": [
+            delete_chat_context,
+            "Delete chat context used by the AI, usage: deletechatctx <number of messages to delete>",
+        ],
     }
     if event.message.text == "help":
         message = "Available commands:\n"
@@ -136,11 +141,15 @@ def handle_text_message(event):
     else:
         LOGGER.info("Command not found")
         context = f"""
-        You are currently talking to someone with the username: {user_name}
-        The user id is: {user_id}
-        the current time is: {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+username: {user_name}
+datetime: {datetime.datetime.now().strftime("%A, %d %B %Y. %I:%M %p")}
         """
-        response = ai.get_response(query=event.message.text, user_id=user_id, user_name=user_name, context=context)
+        response = ai.get_response(
+            query=event.message.text,
+            user_id=user_id,
+            user_name=user_name,
+            context=context,
+        )
 
     if isinstance(
         response,
@@ -218,6 +227,7 @@ def callback():
 
 @app.route("/push", methods=["POST"])
 def receive_flex():
+    config = line_util.load_config()
     key = request.headers["SECRET_KEY"]
     if key != os.environ.get("SECRET_KEY"):
         return "Invalid key", 403

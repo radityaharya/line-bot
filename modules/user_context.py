@@ -1,5 +1,7 @@
-from util.chat_logger import ChatLogger
 from linebot.models import TextSendMessage
+
+from util.chat_logger import ChatLogger
+
 
 def overwrite_user_context(event, **kwargs):
     """Overwrite user context"""

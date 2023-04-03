@@ -3,6 +3,7 @@ import os
 import openai
 from linebot.models import TextSendMessage
 from util.chat_logger import ChatLogger
+from util.line_util import load_config
 
 logger = logging.getLogger("line-bot")
 openai.api_key = os.environ.get("OPENAI_API_KEY")
@@ -11,7 +12,6 @@ openai.api_key = os.environ.get("OPENAI_API_KEY")
 class OpenAI:
     def __init__(self):
         self.chat_logger = ChatLogger()
-        self.prompt = os.environ.get("OPENAI_PROMPT") or ""
 
     def get_response(self, query, user_id, user_name, context):
         """Get response from OpenAI's ChatGPT"""
@@ -39,11 +39,12 @@ class OpenAI:
             return TextSendMessage(text="chat log has been reset")
 
         additional_context = self.chat_logger.user_specific_context(user_id, user_name)
-        
+
         system_prompt = (
-            self.prompt
+            load_config()["openai_prompt"]
             + f"\n\nYou are given the following context: \n{context}\n{(('with this additional context for this spesific user ' + additional_context) if additional_context is not None or additional_context != '' else '')}"
         )
+        print(system_prompt)
 
         messages = self.chat_logger.retrieve_messages(user_id, include_system=True)
         messages = list(reversed(list(messages)))
@@ -55,14 +56,17 @@ class OpenAI:
         messages.append({"role": "user", "content": query})
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            max_tokens=100,
+            max_tokens=load_config()["openai_max_tokens"],
             messages=messages,
+            user=user_id,
         )
 
         result = "".join([choice.message.content for choice in response.choices])
+        # get token used from response by openai
+        usage = response["usage"]
 
         self.chat_logger.log_message(user_id, user_name, "user", query)
-        self.chat_logger.log_message(user_id, user_name, "assistant", result)
+        self.chat_logger.log_message(user_id, user_name, "assistant", result, usage)
         if "!BLOCK USER" in result:
             self.chat_logger.block_user(user_id, user_name)
 

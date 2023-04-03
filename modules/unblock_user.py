@@ -1,6 +1,8 @@
 from linebot.models import TextSendMessage
+
 from decorators import rule
 from util.chat_logger import ChatLogger
+
 
 @rule.is_owner
 @rule.is_not_blocked
