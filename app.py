@@ -66,10 +66,7 @@ logging.basicConfig(
     ],
 )
 
-filehandler = logging.FileHandler("line.log")
-filehandler.setFormatter(logging.Formatter("[%(asctime)s][%(levelname)s] %(message)s"))
 line_log = pymongo.MongoClient(os.environ.get("MONGO_URI"))["line-bot"]["line-log"]
-LOGGER.addHandler(filehandler)
 LOGGER.addHandler(MongoLogHandler(line_log))
 logging.getLogger("werkzeug").setLevel(logging.INFO)
 
@@ -78,7 +75,7 @@ app = Flask(__name__)
 line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
-ai = OpenAI()
+ai = OpenAI(line_bot_api)
 
 
 @handler.add(MessageEvent, message=TextMessage)
@@ -123,6 +120,10 @@ def handle_text_message(event):
             delete_chat_context,
             "Delete chat context used by the AI, usage: deletechatctx <number of messages to delete>",
         ],
+        "generatememe": [
+            ai.generate_meme,
+            f"Generate a meme, usage: {prefix}generatememe <prompt>",
+        ],
     }
     if event.message.text == "help":
         message = "Available commands:\n"
@@ -139,7 +140,6 @@ def handle_text_message(event):
             )
             break
     else:
-        LOGGER.info("Command not found")
         context = f"""
 username: {user_name}
 datetime: {datetime.datetime.now().strftime("%A, %d %B %Y. %I:%M %p")}
@@ -172,7 +172,11 @@ datetime: {datetime.datetime.now().strftime("%A, %d %B %Y. %I:%M %p")}
             TextSendMessage,
             VideoMessage,
         ),
-    ):
+    ):  
+        try:
+            LOGGER.info(f"[MESSAGE] 🤖bot (bot): {response.text}")
+        except AttributeError:
+            pass
         line_bot_api.reply_message(event.reply_token, response)
 
 
