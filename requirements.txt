@@ -11,3 +11,4 @@ fuzzywuzzy
 binusmayapy
 python-Levenshtein
 openai
+promptlayer

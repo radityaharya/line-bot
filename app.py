@@ -83,6 +83,7 @@ def handle_text_message(event):
     config = line_util.load_config()
     user_id = event.source.user_id
     user_name, user_picture_url = line_util.get_user_profile(line_bot_api, user_id)
+    group_id = None
     LOGGER.info(f"[MESSAGE] {user_name} ({user_id}): {event.message.text}")
     line_util.check_owner_config(event)
 
@@ -92,6 +93,7 @@ def handle_text_message(event):
     if not isinstance(event.source, SourceUser):
         if not event.message.text.startswith(config["prefix"]):
             LOGGER.info("Prefix not found")
+            group_id = event.source.group_id
             return
         event.message.text = event.message.text.replace(config["prefix"], "", 1)
         prefix = config["prefix"]
@@ -147,6 +149,7 @@ datetime: {datetime.datetime.now().strftime("%A, %d %B %Y. %I:%M %p")}
         response = ai.get_response(
             query=event.message.text,
             user_id=user_id,
+            group_id=group_id,
             user_name=user_name,
             context=context,
         )
@@ -172,7 +175,7 @@ datetime: {datetime.datetime.now().strftime("%A, %d %B %Y. %I:%M %p")}
             TextSendMessage,
             VideoMessage,
         ),
-    ):  
+    ):
         try:
             LOGGER.info(f"[MESSAGE] 🤖bot (bot): {response.text}")
         except AttributeError:
