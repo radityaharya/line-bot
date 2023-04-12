@@ -4,11 +4,13 @@ import os
 import datetime
 import bson
 import logging
+
 load_dotenv(override=True)
 
 client = pymongo.MongoClient(os.environ.get("MONGO_URI"), maxPoolSize=50)
 
 logger = logging.getLogger("line-bot")
+
 
 class ChatLogger:
     def __init__(self) -> None:
@@ -54,7 +56,11 @@ class ChatLogger:
 
     def delete_n_number_of_messages(self, user_id, n):
         logger.info(f"🗑️ Deleting {n} messages for {user_id}")
-        for message in self.log.find({"user_id": user_id}).sort("timestamp", pymongo.ASCENDING).limit(n):
+        for message in (
+            self.log.find({"user_id": user_id})
+            .sort("timestamp", pymongo.ASCENDING)
+            .limit(n)
+        ):
             self.log.delete_one({"_id": message["_id"]})
 
     def block_user(self, user_id, user_name):

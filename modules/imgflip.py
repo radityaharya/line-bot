@@ -10,11 +10,13 @@ def get_memes():
     response = requests.get(url)
     return response.json()
 
+
 def meme_list():
     memes = get_memes()
     memes = memes["data"]["memes"]
     memes = [meme["name"] for meme in memes]
     return "\n".join(memes)
+
 
 def meme_fuzzy_search(search):
     memes = get_memes()
